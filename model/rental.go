@@ -24,7 +24,8 @@ type Rental struct{
 	Length float64 `json:"length"`
 	Sleeps int  `json:"sleeps"`
 	PrimaryImageUrl string  `json:"primary_image_url"`
-	Price Price `json:"price"`
-	Location Location `json:"location"`
+	Price Price `gorm:"embedded" json:"price"`
+	Location Location `gorm:"embedded" json:"location"`
+	UserId int `json:"-"` //TODO fiqure out how to tell GROM to not worry about this field and still allow the join
 	User User `json:"user"`
 }
