@@ -1,12 +1,27 @@
 package repository
+
 import (
 	"gorm.io/gorm"
 	"outdoorsy.com/backend/model"
 )
 
+const MILE_IN_METERS = 1609.34
+
+type LatLong struct {
+	Latitude  float64
+	Longitude float64
+}
+
+type RentalFilter struct {
+	PriceMax *float64
+	PriceMin *float64
+	IDs      *[]string //TODO this should be a list of ints
+	Near     *LatLong
+}
+
 type RentalRepository interface {
 	FindById(id int) (model.Rental, error)
-	FindAll() ([]model.Rental)
+	FindAllByFilter(RentalFilter) []model.Rental
 }
 
 type GORMRentalRepository struct {
@@ -19,8 +34,26 @@ func (repository *GORMRentalRepository) FindById(id int) (model.Rental, error) {
 	return rental, err
 }
 
-func (repository *GORMRentalRepository) FindAll() ([]model.Rental) {
+func (repository *GORMRentalRepository) FindAllByFilter(filter RentalFilter) []model.Rental {
 	var rentals []model.Rental
-    repository.Database.Preload("User").Find(&rentals)
+	query := repository.Database.Preload("User")
+	if filter.PriceMin != nil {
+		query = query.Where("price_per_day > ?", *filter.PriceMin)
+	}
+	if filter.PriceMax != nil {
+		query = query.Where("price_per_day < ?", *filter.PriceMax)
+	}
+	if filter.IDs != nil && len(*filter.IDs) > 0 {
+		query = query.Where("id IN (?)", *filter.IDs)
+	}
+	if filter.Near !=nil {
+		query = query.Where(`
+		ST_Distance_Sphere(
+			ST_MakePoint(lng, lat),
+			ST_MakePoint(?, ?)
+		) <= ?;
+		`, filter.Near.Longitude, filter.Near.Latitude, MILE_IN_METERS * 100)
+	}
+	query.Find(&rentals)
 	return rentals
 }
