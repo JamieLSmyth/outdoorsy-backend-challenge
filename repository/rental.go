@@ -34,9 +34,12 @@ func (repository *GORMRentalRepository) FindById(id int) (model.Rental, error) {
 	return rental, err
 }
 
-func (repository *GORMRentalRepository) FindAllByFilter(filter RentalFilter) []model.Rental {
+func (repository *GORMRentalRepository) FindAllByFilter(filter RentalFilter, offset int, limit int, sort []string) []model.Rental {
 	var rentals []model.Rental
-	query := repository.Database.Preload("User")
+	query := repository.Database.Preload("User").Offset(offset)
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
 	if filter.PriceMin != nil {
 		query = query.Where("price_per_day > ?", *filter.PriceMin)
 	}
@@ -51,7 +54,7 @@ func (repository *GORMRentalRepository) FindAllByFilter(filter RentalFilter) []m
 		ST_Distance_Sphere(
 			ST_MakePoint(lng, lat),
 			ST_MakePoint(?, ?)
-		) <= ?;
+		) <= ?
 		`, filter.Near.Longitude, filter.Near.Latitude, MILE_IN_METERS * 100)
 	}
 	query.Find(&rentals)
