@@ -12,6 +12,21 @@ import (
 	"outdoorsy.com/backend/repository"
 )
 
+type GeoLocation struct {
+	Latitude float64
+	Longitude float64
+}
+
+type RentalQueryParams struct {
+	PriceMin *float64 `form:"price_min"`
+	PriceMax *float64 `form:"price_max"`
+	IDs *string `form:"price_max"`
+	Near *string `form:"near"`
+	Limit *int `form:"limit"`
+	Offset *int `form:"offset"`
+	Sort *string `form:"sort"`
+}
+
 var RentalRepository *repository.GORMRentalRepository = nil
 
 func Init(router *gin.Engine) {
@@ -46,30 +61,33 @@ func GetRental(context *gin.Context) {
 }
 
 func GetRentals(context *gin.Context) {
+	var query = RentalQueryParams{}
+	if err := context.ShouldBindQuery(&query); err != nil {
+        context.AbortWithError(http.StatusBadRequest, err)
+		return
+    }
+
 	filter := repository.RentalFilter{}
-	if value, err := strconv.ParseFloat(context.Query("price_min"), 64); err == nil {
-		filter.PriceMin = &value
-	}
-	if value, err := strconv.ParseFloat(context.Query("price_max"), 64); err == nil {
-		filter.PriceMax = &value
-	}
-	ids_string := context.Query("ids")
-	if len(ids_string) > 0 { // TODO Shouldn't need this once doing the convert below
-		ids := strings.Split(ids_string, ",")
+	filter.PriceMin = query.PriceMin
+	filter.PriceMax = query.PriceMax
+	if query.IDs != nil && len(*query.IDs) > 0 { // TODO Shouldn't need this once doing the convert below
+		ids := strings.Split(*query.IDs, ",")
 		//TODO convert these to integers and error ignore anything that is not an int
 		filter.IDs = &ids
 	}
-    near := strings.Split(context.Query("near"), ",")
-    if len(near) == 2 {
-        latLong := repository.LatLong{}
-        if value, err := strconv.ParseFloat(near[0],64); err == nil {
-            latLong.Latitude = value
-        }
-        if value, err := strconv.ParseFloat(near[1],64); err == nil {
-            latLong.Longitude = value
-        }
-        filter.Near = &latLong
-    }
+	if query.Near != nil {
+    	near := strings.Split(*query.Near, ",")
+		if len(near) == 2 {
+			latLong := repository.LatLong{}
+			if value, err := strconv.ParseFloat(near[0],64); err == nil {
+				latLong.Latitude = value
+			}
+			if value, err := strconv.ParseFloat(near[1],64); err == nil {
+				latLong.Longitude = value
+			}
+			filter.Near = &latLong
+		}
+	}
 
 	context.IndentedJSON(http.StatusOK, RentalRepository.FindAllByFilter(filter))
 }
