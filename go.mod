@@ -1,4 +1,4 @@
-module outdoorsly.com/backend
+module outdoorsy.com/backend
 
 go 1.20
 
