@@ -20,11 +20,11 @@ type GeoLocation struct {
 type RentalQueryParams struct {
 	PriceMin *float64 `form:"price_min"`
 	PriceMax *float64 `form:"price_max"`
-	IDs *string `form:"price_max"`
-	Near *string `form:"near"`
+	IDs string `form:"price_max"`
+	Near string `form:"near"`
 	Limit int `form:"limit"`
 	Offset int `form:"offset"`
-	Sort *string `form:"sort"`
+	Sort string `form:"sort"`
 }
 
 var RentalRepository *repository.GORMRentalRepository = nil
@@ -70,24 +70,22 @@ func GetRentals(context *gin.Context) {
 	filter := repository.RentalFilter{}
 	filter.PriceMin = query.PriceMin
 	filter.PriceMax = query.PriceMax
-	if query.IDs != nil && len(*query.IDs) > 0 { // TODO Shouldn't need this once doing the convert below
-		ids := strings.Split(*query.IDs, ",")
+	if len(query.IDs) > 0 { // TODO Shouldn't need this once doing the convert below
+		ids := strings.Split(query.IDs, ",")
 		//TODO convert these to integers and error ignore anything that is not an int
 		filter.IDs = &ids
 	}
-	if query.Near != nil {
-    	near := strings.Split(*query.Near, ",")
-		if len(near) == 2 {
-			latLong := repository.LatLong{}
-			if value, err := strconv.ParseFloat(near[0],64); err == nil {
-				latLong.Latitude = value
-			}
-			if value, err := strconv.ParseFloat(near[1],64); err == nil {
-				latLong.Longitude = value
-			}
-			filter.Near = &latLong
+	near := strings.Split(query.Near, ",")
+	if len(near) == 2 {
+		latLong := repository.LatLong{}
+		if value, err := strconv.ParseFloat(near[0],64); err == nil {
+			latLong.Latitude = value
 		}
+		if value, err := strconv.ParseFloat(near[1],64); err == nil {
+			latLong.Longitude = value
+		}
+		filter.Near = &latLong
 	}
-
-	context.IndentedJSON(http.StatusOK, RentalRepository.FindAllByFilter(filter, query.Offset, query.Limit, make([]string,0)))
+	
+	context.IndentedJSON(http.StatusOK, RentalRepository.FindAllByFilter(filter, query.Offset, query.Limit, query.Sort))
 }
