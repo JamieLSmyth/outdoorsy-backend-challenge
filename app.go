@@ -16,7 +16,17 @@ func main() {
 
 	//configure database(s)
 	// Initialize Database
-	dsn := "host=postgres user=root password=root dbname=testingwithrentals port=5432 sslmode=disable"
+	dbhost := os.Getenv("PGHOST")
+	dbuser := os.Getenv("POSTGRES_USER")
+	dbpassword := os.Getenv("POSTGRES_PASSWORD")
+	dbname := os.Getenv("PGDATABASE")
+	dbport := os.Getenv("PGPORT")
+	if len(dbport) == 0 {
+		dbport = "5432"
+	}
+
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s",
+		dbhost, dbuser, dbpassword, dbname, dbport)
 	rentalsDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic(err)
