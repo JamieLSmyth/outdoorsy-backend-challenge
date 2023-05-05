@@ -12,11 +12,6 @@ import (
 	"outdoorsy.com/backend/repository"
 )
 
-type GeoLocation struct {
-	Latitude float64
-	Longitude float64
-}
-
 type RentalQueryParams struct {
 	PriceMin *float64 `form:"price_min"`
 	PriceMax *float64 `form:"price_max"`
@@ -25,6 +20,17 @@ type RentalQueryParams struct {
 	Limit int `form:"limit"`
 	Offset int `form:"offset"`
 	Sort string `form:"sort"`
+}
+
+/* TODO there is probably a better way to do this so the names match the json out put 
+and the fields are automatically mapped through the ORM */ 
+var SORT_FIELD_MAP = map[string]string{
+	"price":"price_per_day",
+	"name":"name",
+	"type":"type",
+	"city":"home_city",
+	"state":"home_state",
+	"country":"home_country",
 }
 
 var RentalRepository *repository.GORMRentalRepository = nil
@@ -86,6 +92,13 @@ func GetRentals(context *gin.Context) {
 		}
 		filter.Near = &latLong
 	}
-	
-	context.IndentedJSON(http.StatusOK, RentalRepository.FindAllByFilter(filter, query.Offset, query.Limit, query.Sort))
+	sort, ok := SORT_FIELD_MAP[query.Sort]
+	if len(query.Sort) > 0 && !ok {
+		//TODO probably best to return the list of valid parameters here
+		context.String(http.StatusBadRequest, "Sort parameter is not valid")
+		context.Abort()
+		return
+	}
+
+	context.IndentedJSON(http.StatusOK, RentalRepository.FindAllByFilter(filter, query.Offset, query.Limit, sort))
 }
