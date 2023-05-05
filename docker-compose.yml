@@ -1,5 +1,21 @@
 version: '3.6'
 services:
+  app:
+    build: 
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    working_dir: /workspace
+    env_file:
+        # Ensure that the variables in .env match the same variables in devcontainer.json
+        - .devcontainer/.env
+    ports: 
+      - "8080:8080"
+    volumes:
+      - .:/workspace:cached
+      
+    # Starts up the go application automatically
+    command: go run app.go
+
   postgres:
     image: mdillon/postgis:11
     restart: always
