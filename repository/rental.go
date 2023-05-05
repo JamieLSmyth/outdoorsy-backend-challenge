@@ -34,7 +34,7 @@ func (repository *GORMRentalRepository) FindById(id int) (model.Rental, error) {
 	return rental, err
 }
 
-func (repository *GORMRentalRepository) FindAllByFilter(filter RentalFilter, offset int, limit int, sort string) []model.Rental {
+func (repository *GORMRentalRepository) FindAllByFilter(filter RentalFilter, offset int, limit int, sort string) ([]model.Rental, error) {
 	var rentals []model.Rental
 	query := repository.Database.Preload("User").Offset(offset)
 	if limit > 0 {
@@ -60,6 +60,6 @@ func (repository *GORMRentalRepository) FindAllByFilter(filter RentalFilter, off
 		) <= ?
 		`, filter.Near.Longitude, filter.Near.Latitude, MILE_IN_METERS * 100)
 	}
-	query.Find(&rentals)
-	return rentals
+	err := query.Find(&rentals).Error
+	return rentals, err
 }

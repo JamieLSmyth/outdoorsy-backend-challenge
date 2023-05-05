@@ -15,7 +15,7 @@ import (
 type RentalQueryParams struct {
 	PriceMin *float64 `form:"price_min"`
 	PriceMax *float64 `form:"price_max"`
-	IDs string `form:"price_max"`
+	IDs string `form:"ids"`
 	Near string `form:"near"`
 	Limit int `form:"limit"`
 	Offset int `form:"offset"`
@@ -100,5 +100,10 @@ func GetRentals(context *gin.Context) {
 		return
 	}
 
-	context.IndentedJSON(http.StatusOK, RentalRepository.FindAllByFilter(filter, query.Offset, query.Limit, sort))
+	rentals, err := RentalRepository.FindAllByFilter(filter, query.Offset, query.Limit, sort)
+	if err != nil {
+		context.AbortWithError(http.StatusInternalServerError, err)
+	}
+
+	context.IndentedJSON(http.StatusOK, rentals)
 }
