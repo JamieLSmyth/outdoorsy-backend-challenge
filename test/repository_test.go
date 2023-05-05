@@ -1,4 +1,4 @@
-package repository
+package test
 
 import (
 	"fmt"
@@ -7,14 +7,13 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"outdoorsy.com/backend/repository"
 )
 
 func TestShouldFindExistingRentalByID(t *testing.T){
 	const A_RENTAL_ID = 1
 
-	rentalRepository, mock := CreateRepositoryAndSQLMock(t)
+	rentalRepository, mock := createRepositoryAndSQLMock(t)
 
 	expected := mock.NewRows([]string{"id"}).AddRow(A_RENTAL_ID)
 	mock.ExpectQuery("SELECT \\* FROM \"rentals\" WHERE id = \\$1").
@@ -35,7 +34,7 @@ func TestShouldFindExistingRentalByID(t *testing.T){
 func TestShouldErrorWhenRentalDoesNotExistForID(t *testing.T){
 	const A_RENTAL_ID = 1
 	
-	rentalRepository, mock := CreateRepositoryAndSQLMock(t)
+	rentalRepository, mock := createRepositoryAndSQLMock(t)
 
 	mock.ExpectQuery("SELECT \\* FROM \"rentals\" WHERE id = \\$1").
 		WithArgs(A_RENTAL_ID).
@@ -55,7 +54,7 @@ func TestShouldErrorWhenRentalDoesNotExistForID(t *testing.T){
 func TestShouldGetAllRentalsWhenNoFiltersSupplied(t *testing.T) {
 	const RENTALS_COUNT = 3 //This is currently a magic number but should be used to generate number of result rows
 
-	rentalRepository, mock := CreateRepositoryAndSQLMock(t)
+	rentalRepository, mock := createRepositoryAndSQLMock(t)
 
 	expected := mock.NewRows([]string{"id"}).
 		AddRow(1).
@@ -81,7 +80,7 @@ func TestShouldFilterByProximityWhenNearFilterIsSupplied(t *testing.T) {
 	const FILTER_LONGITUDE = -9.12 //Ths could be randomly generated
 	const ONE_HUNDRED_MILES_IN_METERS = 160934.0
 	
-	rentalRepository, mock := CreateRepositoryAndSQLMock(t)
+	rentalRepository, mock := createRepositoryAndSQLMock(t)
 
 	expected := mock.NewRows([]string{"id"}).
 		AddRow(1).
@@ -103,7 +102,7 @@ func TestShouldFilterByProximityWhenNearFilterIsSupplied(t *testing.T) {
 
 //TODO Implement the many other test for filters, limit, offset and different permutations
 
-func CreateRepositoryAndSQLMock(t *testing.T) (repository.RentalRepository, sqlmock.Sqlmock)  {
+func createRepositoryAndSQLMock(t *testing.T) (repository.RentalRepository, sqlmock.Sqlmock)  {
 	db, mock, err := sqlmock.New()
     if err != nil {
         t.Fatalf("error occured creating mock database")
@@ -115,8 +114,6 @@ func CreateRepositoryAndSQLMock(t *testing.T) (repository.RentalRepository, sqlm
 	if err !=nil {
 		t.Fatalf("error occured creating gorm database")
 	}
-
-	gormDB.Config.Logger = logger.Default.LogMode(logger.Info)
 
 	repository := &repository.GORMRentalRepository{Database: gormDB}
 

@@ -36,11 +36,11 @@ func Init(router *gin.Engine, repository repository.RentalRepository) {
 
 	RentalRepository = repository
 
-	router.GET("/rentals", GetRentals)
-	router.GET("/rentals/:id", GetRental)
+	router.GET("/rentals", getRentals)
+	router.GET("/rentals/:id", getRental)
 }
 
-func GetRental(context *gin.Context) {
+func getRental(context *gin.Context) {
 	id, err := strconv.Atoi(context.Param("id"))
 	if err != nil {
 		context.AbortWithStatus(http.StatusNotFound)
@@ -54,7 +54,7 @@ func GetRental(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, rental)
 }
 
-func GetRentals(context *gin.Context) {
+func getRentals(context *gin.Context) {
 	var query = RentalQueryParams{}
 	if err := context.ShouldBindQuery(&query); err != nil {
         context.AbortWithError(http.StatusBadRequest, err)
