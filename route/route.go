@@ -6,9 +6,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"outdoorsy.com/backend/repository"
 )
 
@@ -33,20 +30,11 @@ var SORT_FIELD_MAP = map[string]string{
 	"country":"home_country",
 }
 
-var RentalRepository *repository.GORMRentalRepository = nil
+var RentalRepository repository.RentalRepository = nil
 
-func Init(router *gin.Engine) {
-	// Initialize Database
-	dsn := "host=postgres user=root password=root dbname=testingwithrentals port=5432 sslmode=disable"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic(err)
-	}
+func Init(router *gin.Engine, repository repository.RentalRepository) {
 
-    db.Config.Logger = logger.Default.LogMode(logger.Info)
-
-	//Initialize Repositories
-	RentalRepository = &repository.GORMRentalRepository{Database: db}
+	RentalRepository = repository
 
 	router.GET("/rentals", GetRentals)
 	router.GET("/rentals/:id", GetRental)
@@ -76,11 +64,24 @@ func GetRentals(context *gin.Context) {
 	filter := repository.RentalFilter{}
 	filter.PriceMin = query.PriceMin
 	filter.PriceMax = query.PriceMax
-	if len(query.IDs) > 0 { // TODO Shouldn't need this once doing the convert below
-		ids := strings.Split(query.IDs, ",")
-		//TODO convert these to integers and error ignore anything that is not an int
-		filter.IDs = &ids
+
+	//TODO this could get way fancier by handling trailing commas, empty entries and lots of other things
+	if len(query.IDs) > 0 {
+		idStrings := strings.Split(query.IDs, ",")
+		ids := make([]int, len(idStrings))
+
+		for i, str := range idStrings {
+			id, err := strconv.Atoi(strings.TrimSpace(str))
+			if err != nil {
+				context.String(http.StatusBadRequest, `"id" parameter contains invalid value. Should contain a comma separated list of integers`)
+				context.Abort()
+				return
+			}
+			ids[i] = id
+		}
+		filter.IDs = ids
 	}
+
 	near := strings.Split(query.Near, ",")
 	if len(near) == 2 {
 		latLong := repository.LatLong{}

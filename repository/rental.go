@@ -15,13 +15,13 @@ type LatLong struct {
 type RentalFilter struct {
 	PriceMax *float64
 	PriceMin *float64
-	IDs      *[]string //TODO this should be a list of ints
+	IDs      []int
 	Near     *LatLong
 }
 
 type RentalRepository interface {
 	FindById(id int) (model.Rental, error)
-	FindAllByFilter(RentalFilter) []model.Rental
+	FindAllByFilter(filter RentalFilter, offset int, limit int, sort string) ([]model.Rental, error)
 }
 
 type GORMRentalRepository struct {
@@ -49,8 +49,8 @@ func (repository *GORMRentalRepository) FindAllByFilter(filter RentalFilter, off
 	if filter.PriceMax != nil {
 		query = query.Where("price_per_day < ?", *filter.PriceMax)
 	}
-	if filter.IDs != nil && len(*filter.IDs) > 0 {
-		query = query.Where("id IN (?)", *filter.IDs)
+	if len(filter.IDs) > 0 {
+		query = query.Where("id IN (?)", filter.IDs)
 	}
 	if filter.Near !=nil {
 		query = query.Where(`
